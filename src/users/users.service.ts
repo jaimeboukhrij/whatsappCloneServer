@@ -4,7 +4,6 @@ import { Repository } from 'typeorm'
 import { isUUID } from 'class-validator'
 import { User } from 'src/shared/entities'
 import { UpdateUserDto } from '../shared/dto'
-import { NewContactDto } from './dto/new-contact.dto'
 
 @Injectable()
 export class UsersService {
@@ -73,36 +72,53 @@ export class UsersService {
     return user
   }
 
+  async findUsersByUsernamePrefix (prefix: string, currentUserId:string) {
+    try {
+      const currentUsercontactsIds = (await this.findOnePlane(currentUserId)).contacts.map(contact => contact.id)
+      let users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.userName ILIKE :prefix', { prefix: `${prefix}%` })
+        .leftJoinAndSelect('user.contacts', 'contact')
+        .limit(10)
+        .getMany()
+
+      if (!users.length) return []
+
+      users = users.filter(user => !currentUsercontactsIds.includes(user.id))
+      users = users.filter(user => user.id !== currentUserId)
+
+      const userWithoutPassword = users.map(user => {
+        delete user.password
+        return user
+      })
+
+      return userWithoutPassword
+    } catch (error) {
+      this.handleExceptions(error)
+    }
+  }
+
+  async getUsersRecommended (currentUserId:string) {
+    try {
+      const currentUsercontactsIds = (await this.findOnePlane(currentUserId)).contacts.map(contact => contact.id)
+      let usersRecommended = await this.findAll()
+
+      usersRecommended = usersRecommended.filter(user => !currentUsercontactsIds.includes(user.id))
+      usersRecommended = usersRecommended.filter(user => user.id !== currentUserId)
+
+      const userWithoutPassword = usersRecommended.map(user => {
+        delete user.password
+        return user
+      })
+
+      return userWithoutPassword
+    } catch (error) {
+      this.handleExceptions(error)
+    }
+  }
+
   remove (id: number) {
     return `This action removes a #${id} user`
-  }
-
-  async addNewContact (userId:string, newContactDto:NewContactDto) {
-    if (userId === newContactDto.id) throw new BadRequestException(`userId "${userId}" and newContactUserId "${newContactDto.id} are the same"`)
-
-    const { contacts } = await this.findOnePlane(userId)
-    const newContactUser = await this.findOnePlane(newContactDto.id)
-
-    if (contacts.some(contact => contact.id === newContactDto.id)) throw new BadRequestException('This user is just your contact')
-    const updatedContacts = [...contacts, newContactUser]
-
-    return await this.update(userId, { contacts: updatedContacts })
-  }
-
-  async removeContact (userId:string, newContactDto:NewContactDto) {
-    if (userId === newContactDto.id) throw new BadRequestException(`userId "${userId}" and newContactUserId "${newContactDto.id} are the same"`)
-
-    const { contacts, ...user } = await this.findOnePlane(userId)
-    if (!contacts.some(contact => contact.id === newContactDto.id)) throw new BadRequestException(`User with id "${newContactDto.id}" is not your contact`)
-
-    const updatedContacts = contacts.filter(contact => contact.id !== newContactDto.id)
-
-    await this.userRepository.save({
-      ...user,
-      contacts: updatedContacts
-    })
-
-    return `Contact with id "${newContactDto.id}" was deleted`
   }
 
   private handleExceptions (error:any) {

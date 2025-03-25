@@ -24,6 +24,7 @@ export class AuthService {
       })
 
       const userDB = await this.userRepository.save(user)
+      console.log(userDB)
 
       return userDB
     } catch (error) {

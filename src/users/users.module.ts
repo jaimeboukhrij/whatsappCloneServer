@@ -10,7 +10,8 @@ import { SharedModule } from 'src/shared/shared.module'
   imports: [
     AuthModule,
     SharedModule
-  ]
+  ],
+  exports: [UsersService]
 
 })
 export class UsersModule {}

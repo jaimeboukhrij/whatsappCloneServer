@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator'
 
-export class NewContactDto {
+export class CreateContactDto {
   @IsString()
-    id: string
+    id:string
 }

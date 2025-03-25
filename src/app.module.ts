@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config'
 import { SeedModule } from './seed/seed.module'
 import { UsersModule } from './users/users.module'
 import { SharedModule } from './shared/shared.module'
+import { ContactsModule } from './contacts/contacts.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { SharedModule } from './shared/shared.module'
     AuthModule,
     SeedModule,
     UsersModule,
-    SharedModule
+    SharedModule,
+    ContactsModule
   ],
   controllers: [],
   providers: []
