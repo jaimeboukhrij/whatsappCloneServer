@@ -3,6 +3,7 @@ import { UsersService } from './users.service'
 import { UpdateUserDto } from 'src/shared/dto'
 import { Auth, GetUser } from 'src/auth/decorators'
 import { User } from 'src/shared/entities'
+import { ChatRoomI } from 'src/chats-room/interfaces'
 
 @Controller('users')
 @Auth()
@@ -19,6 +20,13 @@ export class UsersController {
     @GetUser('id') currentUserId:string
   ): Promise<User[]> {
     return this.usersService.getUsersRecommended(currentUserId)
+  }
+
+  @Get('chats-room')
+  async getUserChatsRoom (
+    @GetUser('id') userId:string
+  ):Promise<ChatRoomI[]> {
+    return this.usersService.getUserChatsRoom(userId)
   }
 
   @Get('search-by-username')

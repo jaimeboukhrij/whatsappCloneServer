@@ -1,15 +1,19 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { isUUID } from 'class-validator'
 import { User } from 'src/shared/entities'
 import { UpdateUserDto } from '../shared/dto'
+import { ChatRoomI } from 'src/chats-room/interfaces'
+import { UtilService } from 'src/shared/services/utils.service'
 
 @Injectable()
 export class UsersService {
   constructor (
     @InjectRepository(User)
-    private readonly userRepository:Repository<User>
+    private readonly userRepository:Repository<User>,
+    private readonly utilsService:UtilService
+
   ) {
 
   }
@@ -33,6 +37,23 @@ export class UsersService {
     }
   }
 
+  async findSome (ids:string[]) {
+    try {
+      const users = await this.userRepository.find({
+        where: {
+          id: In(ids)
+        }
+      })
+      const planeUsers = users.map(user => {
+        delete user.password
+        return user
+      })
+      return planeUsers
+    } catch (error) {
+      this.handleExceptions(error)
+    }
+  }
+
   async findOne (term: string) {
     let user:User
     if (isUUID(term)) {
@@ -51,7 +72,7 @@ export class UsersService {
 
     if (!user) throw new BadRequestException(`User width userName or id "${term}" not found`)
 
-    return user
+    return ({ ...user, lastSeen: this.utilsService.formatLastSeen(new Date(user.lastSeen)) })
   }
 
   async findOnePlane (term:string) {
@@ -65,11 +86,8 @@ export class UsersService {
     const user = await this.findOnePlane(id)
     if (!user) throw new NotFoundException(`User with id: ${id} not found`)
 
-    this.userRepository.merge(user, updateUserDto)
-
-    await this.userRepository.save(user)
-
-    return user
+    const updatedUser = this.userRepository.merge(user, updateUserDto)
+    return await this.userRepository.save(updatedUser)
   }
 
   async findUsersByUsernamePrefix (prefix: string, currentUserId:string) {
@@ -117,8 +135,34 @@ export class UsersService {
     }
   }
 
+  async getUserChatsRoom (userId: string):Promise<ChatRoomI[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: { chatsRoom: { messages: { owner: true }, users: true } }
+    })
+
+    if (!user) throw new Error('User not found')
+    const chatsRoom = await Promise.all(
+      user.chatsRoom.map(async (chatRoom) => {
+        const contactUser = chatRoom.users?.find((user) => user.id !== userId)
+        return {
+          ...chatRoom,
+          name: `${contactUser.firstName} ${contactUser.lastName}`,
+          urlImg: contactUser.urlImg,
+          contactUserId: contactUser.id
+        }
+      })
+    )
+
+    return chatsRoom
+  }
+
   remove (id: number) {
     return `This action removes a #${id} user`
+  }
+
+  createUserByRepository (user:User) {
+    return this.userRepository.create(user)
   }
 
   private handleExceptions (error:any) {

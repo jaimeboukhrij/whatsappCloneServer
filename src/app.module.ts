@@ -5,7 +5,11 @@ import { ConfigModule } from '@nestjs/config'
 import { SeedModule } from './seed/seed.module'
 import { UsersModule } from './users/users.module'
 import { SharedModule } from './shared/shared.module'
-import { ContactsModule } from './contacts/contacts.module';
+import { ContactsModule } from './contacts/contacts.module'
+import { GroupsModule } from './groups/groups.module'
+import { ChatsRoomModule } from './chats-room/chats-room.module'
+import { MessagesModule } from './messages/messages.module'
+import { MessagesWsModule } from './socket/messages-ws/messages-ws.module'
 
 @Module({
   imports: [
@@ -24,7 +28,11 @@ import { ContactsModule } from './contacts/contacts.module';
     SeedModule,
     UsersModule,
     SharedModule,
-    ContactsModule
+    ContactsModule,
+    GroupsModule,
+    ChatsRoomModule,
+    MessagesModule,
+    MessagesWsModule
   ],
   controllers: [],
   providers: []
