@@ -142,16 +142,18 @@ export class UsersService {
     })
 
     if (!user) throw new Error('User not found')
-    const chatsRoom = await Promise.all(
-      user.chatsRoom.map(async (chatRoom) => {
-        const contactUser = chatRoom.users?.find((user) => user.id !== userId)
-        return {
-          ...chatRoom,
-          name: `${contactUser.firstName} ${contactUser.lastName}`,
-          urlImg: contactUser.urlImg,
-          contactUserId: contactUser.id
-        }
-      })
+    const chatsRoom = await Promise.all(user.chatsRoom.map(async (chatRoom) => {
+      const contactUser = chatRoom.users?.find((user) => user.id !== userId)
+      const messagesSorted = chatRoom.messages.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      return {
+        ...chatRoom,
+        messages: messagesSorted,
+        name: `${contactUser.firstName} ${contactUser.lastName}`,
+        urlImg: contactUser.urlImg,
+        contactUserId: contactUser.id,
+        lastSeen: this.utilsService.formatLastSeen(new Date(contactUser.lastSeen))
+      }
+    })
     )
 
     return chatsRoom

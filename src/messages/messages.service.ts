@@ -35,13 +35,26 @@ export class MessagesService {
         text,
         date: new Date(),
         owner: userCreate,
-        chatRoom: chatRoomCreate
+        chatRoom: chatRoomCreate,
+        chatRoomId
       })
 
       return message
     } catch (error) {
       console.log(error)
     }
+  }
+
+  async updateMany (messages: UpdateMessageDto[]) {
+    const updates = messages.map(async (message) => {
+      const existing = await this.messagesReposiroty.findOne({ where: { id: message.id } })
+      if (!existing) throw new BadRequestException(`Message with id ${message.id} not found`)
+
+      const updated = this.messagesReposiroty.merge(existing, message)
+      return this.messagesReposiroty.save(updated)
+    })
+
+    return Promise.all(updates)
   }
 
   update (id: number, updateMessageDto: UpdateMessageDto) {

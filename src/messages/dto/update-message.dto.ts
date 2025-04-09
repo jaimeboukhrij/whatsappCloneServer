@@ -1,9 +1,12 @@
 import { PartialType } from '@nestjs/mapped-types'
 import { CreateMessageDto } from './create-message.dto'
-import { IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString, IsUUID } from 'class-validator'
 
 export class UpdateMessageDto extends PartialType(CreateMessageDto) {
+  @IsUUID()
+    id: string
+
   @IsOptional()
   @IsString()
-    text?: string
+    isRead?: boolean
 }

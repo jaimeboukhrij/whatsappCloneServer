@@ -10,11 +10,17 @@ export class Messages {
     @Column('text')
       text: string
 
+    @Column('bool', { default: false })
+      isRead: boolean
+
     @CreateDateColumn({ type: 'timestamp' })
       date: Date
 
     @ManyToOne(() => User, (user) => user.messages, { onDelete: 'CASCADE' })
       owner: User
+
+    @Column('text')
+      chatRoomId: string
 
     @ManyToOne(() => ChatsRoom, (chatRoom) => chatRoom.messages, { onDelete: 'CASCADE' })
       chatRoom: ChatsRoom

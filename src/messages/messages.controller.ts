@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, Delete } from '@nestjs/common'
+import { Controller, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common'
 import { MessagesService } from './messages.service'
 import { CreateMessageDto } from './dto/create-message.dto'
 import { UpdateMessageDto } from './dto/update-message.dto'
@@ -12,6 +12,11 @@ export class MessagesController {
   @Post()
   create (@Body() createMessageDto: CreateMessageDto) {
     return this.messagesService.create(createMessageDto)
+  }
+
+  @Put('update-many')
+  updateMany (@Body() messages: UpdateMessageDto[]) {
+    return this.messagesService.updateMany(messages)
   }
 
   @Patch(':id')

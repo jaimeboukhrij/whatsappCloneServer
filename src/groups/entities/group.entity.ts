@@ -21,7 +21,7 @@ export class Group {
   @IsOptional()
     description: string | null
 
-  @ManyToMany(() => User, (user) => user.groups)
+  @ManyToMany(() => User, (user) => user.groups, { onDelete: 'CASCADE' })
   @JoinTable({
     name: 'groups_admins',
     joinColumn: {
@@ -35,6 +35,6 @@ export class Group {
   })
     admins: User[]
 
-  @ManyToMany(() => User, (user) => user.groups)
+  @ManyToMany(() => User, (user) => user.groups, { onDelete: 'CASCADE' })
     members: User[]
 }

@@ -34,6 +34,7 @@ export class ChatsRoomService {
   }
 
   async update (updateChatsRoomDto: UpdateChatsRoomDto, chatRoomId: string, currentUserId:string) {
+    console.log('dentrooo', updateChatsRoomDto)
     await this.findOne(chatRoomId, currentUserId)
 
     const { users, ...toUpdate } = updateChatsRoomDto

@@ -16,6 +16,7 @@ import { ChatsRoomModule } from 'src/chats-room/chats-room.module'
     UsersModule,
     ChatsRoomModule
 
-  ]
+  ],
+  exports: [MessagesService]
 })
 export class MessagesModule {}
