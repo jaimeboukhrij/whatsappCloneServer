@@ -59,7 +59,7 @@ export class UsersService {
     if (isUUID(term)) {
       user = await this.userRepository.findOne({
         where: { id: term },
-        relations: { contacts: true }
+        relations: { contacts: true, chatsRoom: true }
       })
     }
 
@@ -144,7 +144,17 @@ export class UsersService {
     if (!user) throw new Error('User not found')
     const chatsRoom = await Promise.all(user.chatsRoom.map(async (chatRoom) => {
       const contactUser = chatRoom.users?.find((user) => user.id !== userId)
-      const messagesSorted = chatRoom.messages.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      const messagesSorted = chatRoom.messages
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((message) => {
+          return {
+            ...message,
+            type:
+            userId === message?.owner?.id
+              ? ('sent' as 'sent' | 'received')
+              : ('received' as 'sent' | 'received')
+          }
+        })
       return {
         ...chatRoom,
         messages: messagesSorted,

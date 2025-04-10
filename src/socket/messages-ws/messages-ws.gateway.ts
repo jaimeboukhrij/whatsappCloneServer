@@ -31,14 +31,46 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
     await this.changeLastSeen(client, false)
   }
 
-  @SubscribeMessage('message-from-client') // Este nombre debe coincidir con el evento enviado desde el cliente
-  async onMessageFromClient (client: Socket, payload: CreateMessageDto) {
-    console.log('Payload recibido:', payload)
-    const message = await this.messagesService.create(payload)
-    this.wss.emit('message-from-server', message)
+  @SubscribeMessage('message-from-client')
+  async onMessageFromClient (client: Socket, message: CreateMessageDto) {
+    const userId = this.messagesWsService.getUserId(client.id)
+    const chatsRoom = await this.usersService.getUserChatsRoom(userId)
+
+    for (const chatRoom of chatsRoom) {
+      const { users } = chatRoom
+      const contactUser = users.find(user => user.id !== userId)
+      const contactSocketId = this.messagesWsService.getSocketIdByUserId(contactUser.id)
+      if (!contactSocketId) continue
+      const messageCreate = await this.messagesService.create(message)
+      this.wss.to(client.id).emit('message-from-server', messageCreate)
+      this.wss.to(contactSocketId).emit('message-from-server', messageCreate)
+    }
+  }
+
+  @SubscribeMessage('writing-from-client')
+  async onWritingFromClient (client: Socket, isWriting: boolean) {
+    if (isWriting) {
+      const token = client.handshake.headers.token as string
+      let payload: JwtPayloadInterface
+
+      try {
+        payload = this.jwtService.verify(token)
+        await this.messagesWsService.registerWritingClient(client, payload.id)
+      } catch (error) {
+        console.log('Error en la verificación del token:', error)
+        client.disconnect()
+        return
+      }
+    }
+
+    if (!isWriting) {
+      this.messagesWsService.removeWritingClient(client.id)
+    }
+    this.wss.emit('writing-from-server', this.messagesWsService.getWritingUsersIds())
   }
 
   private async changeLastSeen (client: Socket, connect: boolean) {
+    console.log('dentrooo')
     if (connect) {
       const token = client.handshake.headers.token as string
       let payload: JwtPayloadInterface
@@ -56,24 +88,31 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
     const userId = this.messagesWsService.getUserId(client.id)
 
     if (!userId) {
-      console.log('Usuario no encontrado para el cliente:', client.id)
       return
+    }
+
+    if (!connect) {
+      this.messagesWsService.removeClient(client.id)
     }
 
     const lastSeen = new Date().toISOString()
     await this.usersService.update(userId, { lastSeen })
 
-    const contacts = (await this.usersService.findOnePlane(userId)).contacts
+    const chatsRoom = await this.usersService.getUserChatsRoom(userId)
 
-    for (const contact of contacts) {
-      const contactSocketId = this.messagesWsService.getSocketIdByUserId(contact.id)
-      if (contactSocketId) {
-        console.log('Emitiendo actualización de usuarios en línea a:', contactSocketId)
-        if (!connect) {
-          this.messagesWsService.removeClient(client.id)
-        }
-        this.wss.to(contactSocketId).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
-      }
+    for (const chatRoom of chatsRoom) {
+      const { users } = chatRoom
+      const contactUser = users.find(user => user.id !== userId)
+      const contactSocketId = this.messagesWsService.getSocketIdByUserId(contactUser.id)
+      if (!contactSocketId) continue
+      this.wss.to(contactSocketId).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
     }
+
+    // for (const contact of contacts) {
+    //   const contactSocketId = this.messagesWsService.getSocketIdByUserId(contact.id)
+    //   if (!contactSocketId) continue
+    //   this.wss.to(contactSocketId).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
+    // }
+    this.wss.to(client.id).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
   }
 }

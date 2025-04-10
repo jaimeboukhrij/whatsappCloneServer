@@ -10,15 +10,22 @@ interface ConnectedClients {
         socket: Socket,
         user: User
     }
-}
+  }
 
+  interface WritingClients {
+    [id: string]: {
+        socket: Socket,
+        user: User
+    }
+  }
 @Injectable()
 export class MessagesWsService {
-  private connectedClients: ConnectedClients = {}
+  connectedClients: ConnectedClients = {}
+  private writingClients: WritingClients = {}
 
   constructor (
-        @InjectRepository(User)
-        private readonly userRepository: Repository<User>
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>
   ) {}
 
   async registerClient (client: Socket, userId: string) {
@@ -27,7 +34,28 @@ export class MessagesWsService {
 
     this.checkUserConnection(user)
 
+    if (this.isUserConnected(user.id)) {
+      console.log(`Usuario con ID ${user.id} ya está conectado. Desconectando la conexión anterior.`)
+      this.removeClientByUserId(user.id)
+    }
+
     this.connectedClients[client.id] = {
+      socket: client,
+      user
+    }
+  }
+
+  async registerWritingClient (client: Socket, userId: string) {
+    const user = await this.userRepository.findOneBy({ id: userId })
+    if (!user) throw new Error('User not found')
+
+    // this.checkUserConnection(user)
+
+    if (this.isUserWriting(user.id)) {
+      return
+    }
+
+    this.writingClients[client.id] = {
       socket: client,
       user
     }
@@ -37,12 +65,46 @@ export class MessagesWsService {
     delete this.connectedClients[clientId]
   }
 
+  removeWritingClient (clientId: string) {
+    delete this.writingClients[clientId]
+  }
+
+  removeClientByUserId (userId: string) {
+    for (const [socketId, clientData] of Object.entries(this.connectedClients)) {
+      if (clientData.user.id === userId) {
+        this.removeClient(socketId)
+        break
+      }
+    }
+  }
+
+  removeWritingClientByUserId (userId: string) {
+    for (const [socketId, clientData] of Object.entries(this.writingClients)) {
+      if (clientData.user.id === userId) {
+        this.removeWritingClient(socketId)
+        break
+      }
+    }
+  }
+
+  isUserConnected (userId: string): boolean {
+    return Object.values(this.connectedClients).some(client => client.user.id === userId)
+  }
+
+  isUserWriting (userId: string) {
+    return Object.values(this.writingClients).some(client => client.user.id === userId)
+  }
+
   getConnectedUsersIds (): string[] {
     return Object.keys(this.connectedClients).map(socketId => this.getUserId(socketId))
   }
 
+  getWritingUsersIds (): string[] {
+    return Object.keys(this.writingClients).map(socketId => this.getUserId(socketId))
+  }
+
   getUserFullName (socketId: string) {
-    return this.connectedClients[socketId].user.firstName
+    return this.connectedClients[socketId]?.user.firstName || ''
   }
 
   getSocketIdByUserId (userId: string): string | null {
@@ -55,7 +117,7 @@ export class MessagesWsService {
   }
 
   getUserId (socketId: string) {
-    return this.connectedClients[socketId]?.user.id
+    return this.connectedClients[socketId]?.user.id || null
   }
 
   private checkUserConnection (user: User) {
@@ -63,6 +125,7 @@ export class MessagesWsService {
       const connectedClient = this.connectedClients[clientId]
 
       if (connectedClient.user.id === user.id) {
+        console.log(`Desconectando la conexión anterior para el usuario con ID ${user.id}`)
         connectedClient.socket.disconnect()
         break
       }
