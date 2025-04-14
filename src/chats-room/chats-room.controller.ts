@@ -24,6 +24,11 @@ export class ChatsRoomController {
     return this.chatsRoomService.findOne(id, currentUserId)
   }
 
+  @Get('find-contact-chat-room/:contactId')
+  getChatRoomByContactUserId (@Param('contactId') contactId: string, @GetUser('id') currentUserId:string) {
+    return this.chatsRoomService.getChatRoomByContactUserId(currentUserId, contactId)
+  }
+
   @Patch(':id')
   update (@Body() updateChatsRoomDto:UpdateChatsRoomDto, @Param('id') chatRoomId: string, @GetUser('id') currentUserId:string) {
     return this.chatsRoomService.update(updateChatsRoomDto, chatRoomId, currentUserId)

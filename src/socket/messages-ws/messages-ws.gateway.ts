@@ -47,6 +47,12 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
     }
   }
 
+  @SubscribeMessage('message-is-read-client')
+  async onMessageIsRead (client: Socket, contactId:string) {
+    const userClientId = this.messagesWsService.getSocketIdByUserId(contactId)
+    this.wss.to(userClientId).emit('message-is-read-server')
+  }
+
   @SubscribeMessage('writing-from-client')
   async onWritingFromClient (client: Socket, isWriting: boolean) {
     if (isWriting) {
@@ -70,7 +76,6 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   private async changeLastSeen (client: Socket, connect: boolean) {
-    console.log('dentrooo')
     if (connect) {
       const token = client.handshake.headers.token as string
       let payload: JwtPayloadInterface

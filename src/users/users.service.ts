@@ -155,13 +155,26 @@ export class UsersService {
               : ('received' as 'sent' | 'received')
           }
         })
-      return {
-        ...chatRoom,
-        messages: messagesSorted,
-        name: `${contactUser.firstName} ${contactUser.lastName}`,
-        urlImg: contactUser.urlImg,
-        contactUserId: contactUser.id,
-        lastSeen: this.utilsService.formatLastSeen(new Date(contactUser.lastSeen))
+
+      const lastTwentyMessages = messagesSorted.slice(-20)
+      const lastMessage = messagesSorted.at(-1)
+      if (chatRoom.type === 'private') {
+        return {
+          ...chatRoom,
+          messages: messagesSorted,
+          name: `${contactUser.firstName} ${contactUser.lastName}`,
+          urlImg: contactUser.urlImg,
+          contactUserId: contactUser.id,
+          lastSeen: this.utilsService.formatLastSeen(new Date(contactUser.lastSeen)),
+          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id)
+        }
+      } else {
+        return {
+          ...chatRoom,
+          messages: messagesSorted,
+          contactUserId: contactUser.id,
+          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id)
+        }
       }
     })
     )

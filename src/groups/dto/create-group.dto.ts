@@ -6,5 +6,5 @@ export class CreateGroupDto {
     name?:string = 'Nuevo Grupo'
 
   @IsString()
-    members:string
+    members:string[]
 }

@@ -5,6 +5,7 @@ import { SharedModule } from 'src/shared/shared.module'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Group } from './entities/group.entity'
 import { ChatsRoomModule } from 'src/chats-room/chats-room.module'
+import { UsersModule } from 'src/users/users.module'
 
 @Module({
   controllers: [GroupsController],
@@ -12,7 +13,8 @@ import { ChatsRoomModule } from 'src/chats-room/chats-room.module'
   imports: [
     TypeOrmModule.forFeature([Group]),
     SharedModule,
-    ChatsRoomModule
+    ChatsRoomModule,
+    UsersModule
   ]
 })
 export class GroupsModule {}

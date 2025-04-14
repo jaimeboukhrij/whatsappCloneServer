@@ -9,6 +9,7 @@ import { UpdateChatsRoomDto } from './dto/update-chats-room.dto'
 import { CreateChatsRoomGroupDto } from './dto/create-chats-room-group.dto'
 import { ChatRoomI } from './interfaces'
 import { UtilService } from 'src/shared/services/utils.service'
+import { User } from 'src/shared/entities'
 
 @Injectable()
 export class ChatsRoomService {
@@ -34,10 +35,11 @@ export class ChatsRoomService {
   }
 
   async update (updateChatsRoomDto: UpdateChatsRoomDto, chatRoomId: string, currentUserId:string) {
+    console.log('***********+', updateChatsRoomDto, chatRoomId, currentUserId)
     await this.findOne(chatRoomId, currentUserId)
 
     const { users, ...toUpdate } = updateChatsRoomDto
-    let usersDb = []
+    let usersDb:User[] = []
 
     if (users?.length) {
       usersDb = await this.usersService.findSome(users)
@@ -46,10 +48,12 @@ export class ChatsRoomService {
     const chatRoom = await this.chatRoomRepository.preload({
       id: chatRoomId,
       ...toUpdate,
-      users: usersDb.length ? usersDb : undefined
+      ...(usersDb.length && { users: usersDb })
     })
 
-    return this.chatRoomRepository.save(chatRoom)
+    const chatRoomEntity = this.chatRoomRepository.create(chatRoom)
+    console.log(chatRoomEntity)
+    // return await this.chatRoomRepository.save(chatRoomEntity)
   }
 
   private async createChatRoomPrivate (createChatsRoomPrivateDto: CreateChatsRoomPrivateDto, curentUserId: string) {
@@ -99,6 +103,10 @@ export class ChatsRoomService {
       .andWhere('user2.id = :userId', { userId: contactId })
       .andWhere('chatRoom.type = :type', { type: 'private' })
       .getOne()
+  }
+
+  getChatRoomByContactUserId (curentUserId:string, contactId:string) {
+    return this.existingChatRoom(curentUserId, contactId)
   }
 
   async findOne (chatRoomId: string, currentUserId?:string):Promise<ChatRoomI> {

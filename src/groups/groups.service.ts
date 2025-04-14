@@ -5,9 +5,10 @@ import { CreateGroupDto } from './dto/create-group.dto'
 import { UpdateGroupDto } from './dto/update-group.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Group } from './entities/group.entity'
-import { In, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 import { User } from 'src/shared/entities'
 import { CloudinaryService } from 'src/shared/services/cloudinary.service'
+import { UsersService } from 'src/users/users.service'
 
 @Injectable()
 export class GroupsService {
@@ -15,16 +16,13 @@ export class GroupsService {
     @InjectRepository(Group) private readonly groupRepository: Repository<Group>,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly chatsRoomService:ChatsRoomService
+    private readonly chatsRoomService:ChatsRoomService,
+    private readonly usersService:UsersService
   ) {}
 
   async create (createGroupDto: CreateGroupDto, userId:string, image: Express.Multer.File) {
     const urlImg = await this.cloudinaryService.uploadImage(image)
-    const members = await this.userRepository.find({
-      where: {
-        id: In(JSON.parse(createGroupDto.members))
-      }
-    })
+    const members = await this.usersService.findSome((createGroupDto.members))
 
     const adminUser = await this.userRepository.findOneBy({ id: userId })
 
@@ -54,8 +52,22 @@ export class GroupsService {
     return `This action returns a #${id} group`
   }
 
-  update (id: number, updateGroupDto: UpdateGroupDto) {
-    return updateGroupDto
+  async update (groupId: string, updateGroupDto: UpdateGroupDto) {
+    const { members, ...toUpdate } = updateGroupDto
+    let usersDb:User[] = []
+
+    if (members?.length) {
+      usersDb = await this.usersService.findSome(members)
+    }
+
+    const chatRoom = await this.groupRepository.preload({
+      id: groupId,
+      ...toUpdate,
+      ...(usersDb.length && { users: usersDb })
+    })
+
+    const chatRoomEntity = this.groupRepository.create(chatRoom)
+    return await this.groupRepository.save(chatRoomEntity)
   }
 
   remove (id: number) {

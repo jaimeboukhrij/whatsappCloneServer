@@ -32,7 +32,7 @@ export class GroupsController {
 
   @Patch(':id')
   update (@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
-    return this.groupsService.update(+id, updateGroupDto)
+    return this.groupsService.update(id, updateGroupDto)
   }
 
   @Delete(':id')

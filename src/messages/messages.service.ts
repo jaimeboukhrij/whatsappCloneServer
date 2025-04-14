@@ -36,7 +36,8 @@ export class MessagesService {
         date: new Date(),
         owner: userCreate,
         chatRoom: chatRoomCreate,
-        chatRoomId
+        chatRoomId,
+        isRead: false
       })
 
       return message
@@ -46,7 +47,6 @@ export class MessagesService {
   }
 
   async updateMany (messages: UpdateMessageDto[]) {
-    console.log('------------pruebaaa', messages)
     const updates = messages.map(async (message) => {
       const existing = await this.messagesReposiroty.findOne({ where: { id: message.id } })
       if (!existing) throw new BadRequestException(`Message with id ${message.id} not found`)
