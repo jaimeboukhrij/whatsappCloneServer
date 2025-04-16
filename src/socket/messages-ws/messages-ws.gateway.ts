@@ -9,8 +9,7 @@ import { CreateMessageDto } from 'src/messages/dto/create-message.dto'
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
-    credentials: true
+    origin: '*'
   }
 })
 export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -35,14 +34,12 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
   async onMessageFromClient (client: Socket, message: CreateMessageDto) {
     const userId = this.messagesWsService.getUserId(client.id)
     const chatsRoom = await this.usersService.getUserChatsRoom(userId)
+    const chatRoom = chatsRoom.find(chatroom => chatroom.id === message.chatRoomId)
+    const messageCreate = await this.messagesService.create(message)
 
-    for (const chatRoom of chatsRoom) {
-      const { users } = chatRoom
-      const contactUser = users.find(user => user.id !== userId)
-      const contactSocketId = this.messagesWsService.getSocketIdByUserId(contactUser.id)
+    for (const user of chatRoom.users) {
+      const contactSocketId = this.messagesWsService.getSocketIdByUserId(user.id)
       if (!contactSocketId) continue
-      const messageCreate = await this.messagesService.create(message)
-      this.wss.to(client.id).emit('message-from-server', messageCreate)
       this.wss.to(contactSocketId).emit('message-from-server', messageCreate)
     }
   }

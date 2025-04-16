@@ -1,5 +1,4 @@
 import { ContactsService } from './../contacts/contacts.service'
-import { CloudinaryService } from './../shared/services/cloudinary.service'
 import { Injectable } from '@nestjs/common'
 
 import { UserSeed, UsersSeed } from './data'
@@ -7,6 +6,7 @@ import { AuthService } from 'src/auth/auth.service'
 import { InjectRepository } from '@nestjs/typeorm'
 import { User } from 'src/shared/entities'
 import { Repository } from 'typeorm'
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service'
 
 @Injectable()
 export class SeedService {

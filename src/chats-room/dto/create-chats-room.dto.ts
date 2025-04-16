@@ -1,9 +1,8 @@
 import { IsString, IsEnum, IsArray, IsOptional } from 'class-validator'
-import { User } from 'src/shared/entities'
 
-export class CreateChatsRoomGroupDto {
+export class CreateChatsRoomDto {
   @IsArray()
-    users: User[]
+    membersIds: string[]
 
   @IsOptional()
   @IsString()

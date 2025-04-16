@@ -1,12 +1,11 @@
 import { UsersService } from './../users/users.service'
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { CreateChatsRoomPrivateDto } from './dto/create-chats-room-private.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ChatsRoom } from './entities/chats-room.entity'
 import { Repository } from 'typeorm'
 import { isUUID } from 'class-validator'
 import { UpdateChatsRoomDto } from './dto/update-chats-room.dto'
-import { CreateChatsRoomGroupDto } from './dto/create-chats-room-group.dto'
+import { CreateChatsRoomDto } from './dto/create-chats-room.dto'
 import { ChatRoomI } from './interfaces'
 import { UtilService } from 'src/shared/services/utils.service'
 import { User } from 'src/shared/entities'
@@ -20,8 +19,9 @@ export class ChatsRoomService {
 
   ) {}
 
-  create (createChatsRoomPrivateDto: CreateChatsRoomPrivateDto, curentUserId?:string) {
-    if (createChatsRoomPrivateDto.type === 'private') return this.createChatRoomPrivate(createChatsRoomPrivateDto, curentUserId)
+  create (createChatsRoomDto: CreateChatsRoomDto, curentUserId?:string) {
+    if (createChatsRoomDto.type === 'private') return this.createChatRoomPrivate(createChatsRoomDto, curentUserId)
+    return this.createChatRoomGroup(createChatsRoomDto, curentUserId)
   }
 
   async delete (chatRoomId:string) {
@@ -35,38 +35,21 @@ export class ChatsRoomService {
   }
 
   async update (updateChatsRoomDto: UpdateChatsRoomDto, chatRoomId: string, currentUserId:string) {
-    console.log('***********+', updateChatsRoomDto, chatRoomId, currentUserId)
     await this.findOne(chatRoomId, currentUserId)
-
-    const { users, ...toUpdate } = updateChatsRoomDto
-    let usersDb:User[] = []
-
-    if (users?.length) {
-      usersDb = await this.usersService.findSome(users)
-    }
-
-    const chatRoom = await this.chatRoomRepository.preload({
-      id: chatRoomId,
-      ...toUpdate,
-      ...(usersDb.length && { users: usersDb })
-    })
-
-    const chatRoomEntity = this.chatRoomRepository.create(chatRoom)
-    console.log(chatRoomEntity)
-    // return await this.chatRoomRepository.save(chatRoomEntity)
+    return this.updateChatRoomPrivate(updateChatsRoomDto, chatRoomId)
   }
 
-  private async createChatRoomPrivate (createChatsRoomPrivateDto: CreateChatsRoomPrivateDto, curentUserId: string) {
-    if (!createChatsRoomPrivateDto.users.length) {
+  private async createChatRoomPrivate (createChatsRoomPrivateDto: CreateChatsRoomDto, curentUserId: string) {
+    if (!createChatsRoomPrivateDto.membersIds.length) {
       throw new BadRequestException('You must provide a user to create a private chat')
     }
 
-    if (createChatsRoomPrivateDto.users.length > 1) {
+    if (createChatsRoomPrivateDto.membersIds.length > 1) {
       throw new BadRequestException('Conversations cannot be with more than one person')
     }
 
     const currentUser = await this.usersService.findOne(curentUserId)
-    const user = await this.usersService.findOne(createChatsRoomPrivateDto.users[0])
+    const user = await this.usersService.findOne(createChatsRoomPrivateDto.membersIds[0])
 
     if (await this.existingChatRoom(curentUserId, user.id)) {
       throw new BadRequestException('This chat already exists')
@@ -81,18 +64,58 @@ export class ChatsRoomService {
     return await this.chatRoomRepository.save(chatRoom)
   }
 
-  async createChatRoomGroup (createChatsRoomGroupDto: CreateChatsRoomGroupDto) {
-    const chatRoom = this.chatRoomRepository.create({
-      users: createChatsRoomGroupDto.users,
-      name: createChatsRoomGroupDto.name,
-      urlImg: createChatsRoomGroupDto.urlImg,
-      type: 'group',
-      createdAt: new Date()
+  private async createChatRoomGroup (createChatsRoomGroupDto: CreateChatsRoomDto, curentUserId: string) {
+    if (!createChatsRoomGroupDto.membersIds.length) {
+      throw new BadRequestException('You must provide a user to create a private chat')
+    }
 
+    const currentUser = await this.usersService.findOne(curentUserId)
+    const users = await this.usersService.findSome(createChatsRoomGroupDto.membersIds)
+
+    const chatRoom = this.chatRoomRepository.create({
+      users: [currentUser, ...users],
+      type: 'group',
+      createdAt: new Date(),
+      name: createChatsRoomGroupDto.name,
+      urlImg: createChatsRoomGroupDto.urlImg
     })
 
     return await this.chatRoomRepository.save(chatRoom)
   }
+
+  private async updateChatRoomPrivate (updateChatsRoomDto: UpdateChatsRoomDto, chatRoomId: string) {
+    const { users, ...toUpdate } = updateChatsRoomDto
+    let usersDb:User[] = []
+
+    if (users?.length) {
+      usersDb = await this.usersService.findSome(users)
+    }
+
+    const dataToUpdate = {
+      ...toUpdate,
+      ...(usersDb.length && { users: usersDb })
+    }
+
+    const chatRoom = await this.chatRoomRepository.preload({
+      id: chatRoomId,
+      ...dataToUpdate
+    })
+
+    return await this.chatRoomRepository.save(chatRoom)
+  }
+
+  // async createChatRoomGroup (createChatsRoomGroupDto: CreateChatsRoomGroupDto) {
+  //   const chatRoom = this.chatRoomRepository.create({
+  //     users: createChatsRoomGroupDto.users,
+  //     name: createChatsRoomGroupDto.name,
+  //     urlImg: createChatsRoomGroupDto.urlImg,
+  //     type: 'group',
+  //     createdAt: new Date()
+
+  //   })
+
+  //   return await this.chatRoomRepository.save(chatRoom)
+  // }
 
   private async existingChatRoom (curentUserId:string, contactId:string) {
     return await this.chatRoomRepository

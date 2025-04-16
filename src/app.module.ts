@@ -6,10 +6,10 @@ import { SeedModule } from './seed/seed.module'
 import { UsersModule } from './users/users.module'
 import { SharedModule } from './shared/shared.module'
 import { ContactsModule } from './contacts/contacts.module'
-import { GroupsModule } from './groups/groups.module'
 import { ChatsRoomModule } from './chats-room/chats-room.module'
 import { MessagesModule } from './messages/messages.module'
 import { MessagesWsModule } from './socket/messages-ws/messages-ws.module'
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -29,10 +29,10 @@ import { MessagesWsModule } from './socket/messages-ws/messages-ws.module'
     UsersModule,
     SharedModule,
     ContactsModule,
-    GroupsModule,
     ChatsRoomModule,
     MessagesModule,
-    MessagesWsModule
+    MessagesWsModule,
+    CloudinaryModule
   ],
   controllers: [],
   providers: []

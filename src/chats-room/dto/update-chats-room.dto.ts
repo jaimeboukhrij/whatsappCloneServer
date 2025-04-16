@@ -2,9 +2,9 @@ import { PartialType } from '@nestjs/mapped-types'
 import { IsOptional, IsString, IsBoolean, IsEnum, IsDate } from 'class-validator'
 import { NotificationsSilencedEnum } from '../interfaces'
 import { Transform } from 'class-transformer'
-import { CreateChatsRoomPrivateDto } from './create-chats-room-private.dto'
+import { CreateChatsRoomDto } from './create-chats-room.dto'
 
-export class UpdateChatsRoomDto extends PartialType(CreateChatsRoomPrivateDto) {
+export class UpdateChatsRoomDto extends PartialType(CreateChatsRoomDto) {
     @IsOptional()
     @IsString()
       name?: string
@@ -36,6 +36,7 @@ export class UpdateChatsRoomDto extends PartialType(CreateChatsRoomPrivateDto) {
 
     @IsOptional()
     @IsString()
+    @IsOptional()
       urlImg?: string | null
 
     @IsString({ each: true })

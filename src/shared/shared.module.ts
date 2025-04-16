@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { User } from './entities'
-import { CloudinaryService } from './services/cloudinary.service'
 import { UtilService } from './services/utils.service'
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service'
 
 @Module({
   controllers: [],

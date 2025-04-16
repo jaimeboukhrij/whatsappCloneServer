@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Delete, Patch } from '@nestjs/commo
 import { ChatsRoomService } from './chats-room.service'
 import { Auth, GetUser } from 'src/auth/decorators'
 import { UpdateChatsRoomDto } from './dto/update-chats-room.dto'
-import { CreateChatsRoomPrivateDto } from './dto/create-chats-room-private.dto'
+import { CreateChatsRoomDto } from './dto/create-chats-room.dto'
 
 @Controller('chats-room')
 @Auth()
@@ -10,7 +10,7 @@ export class ChatsRoomController {
   constructor (private readonly chatsRoomService: ChatsRoomService) {}
 
   @Post()
-  create (@Body() createChatsRoomPrivateDto: CreateChatsRoomPrivateDto, @GetUser('id') curentUserId:string) {
+  create (@Body() createChatsRoomPrivateDto: CreateChatsRoomDto, @GetUser('id') curentUserId:string) {
     return this.chatsRoomService.create(createChatsRoomPrivateDto, curentUserId)
   }
 
