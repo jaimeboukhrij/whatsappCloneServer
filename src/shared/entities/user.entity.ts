@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { ChatsRoom } from 'src/chats-room/entities/chats-room.entity'
+import { NotificationsSilencedEnum } from 'src/chats-room/interfaces'
 import { Messages } from 'src/messages/entities/message.entity'
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 
@@ -28,6 +29,21 @@ export class User {
 
   @Column('text', { nullable: true })
     lastSeen?: string
+
+  @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
+    chatsRoomArchived?: { chatRoomId: string; value: boolean }[]
+
+  @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
+    chatsRoomNotificationsSilenced?: { chatRoomId: string; value: NotificationsSilencedEnum }[]
+
+  @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
+    chatsRoomPinned?: { chatRoomId: string; value: Date }[]
+
+  @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
+    chatsRoomFavorites?: { chatRoomId: string; value: boolean }[]
+
+  @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
+    chatsRoomBlocked?: { chatRoomId: string; value: boolean }[]
 
   @ManyToMany(() => User, (user) => user.contacts, { nullable: true, onDelete: 'CASCADE' })
   @JoinTable({

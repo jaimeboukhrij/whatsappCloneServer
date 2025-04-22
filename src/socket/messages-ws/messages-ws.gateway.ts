@@ -34,13 +34,22 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
   async onMessageFromClient (client: Socket, message: CreateMessageDto) {
     const userId = this.messagesWsService.getUserId(client.id)
     const chatsRoom = await this.usersService.getUserChatsRoom(userId)
+    // const user = await this.usersService.findOnePlane(userId)
     const chatRoom = chatsRoom.find(chatroom => chatroom.id === message.chatRoomId)
-    const messageCreate = await this.messagesService.create(message)
 
-    for (const user of chatRoom.users) {
-      const contactSocketId = this.messagesWsService.getSocketIdByUserId(user.id)
-      if (!contactSocketId) continue
-      this.wss.to(contactSocketId).emit('message-from-server', messageCreate)
+    const messageCreate = await this.messagesService.create({
+      ...message,
+      isDelivered: !chatRoom.isBlocked
+    })
+
+    for (const chatRoomMember of chatRoom.users) {
+      const contactSocketId = this.messagesWsService.getSocketIdByUserId(chatRoomMember.id)
+
+      if (contactSocketId && !chatRoom.isBlocked) {
+        this.wss.to(contactSocketId).emit('message-from-server', messageCreate)
+      } else if (chatRoomMember.id === userId) {
+        this.wss.to(contactSocketId).emit('message-from-server', { ...messageCreate, isRead: true })
+      }
     }
   }
 
@@ -110,11 +119,6 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
       this.wss.to(contactSocketId).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
     }
 
-    // for (const contact of contacts) {
-    //   const contactSocketId = this.messagesWsService.getSocketIdByUserId(contact.id)
-    //   if (!contactSocketId) continue
-    //   this.wss.to(contactSocketId).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
-    // }
     this.wss.to(client.id).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
   }
 }

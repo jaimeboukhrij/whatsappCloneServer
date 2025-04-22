@@ -13,6 +13,9 @@ export class Messages {
     @Column('bool', { default: false })
       isRead: boolean
 
+    @Column('bool', { default: false })
+      isDelivered: boolean
+
     @CreateDateColumn({ type: 'timestamp' })
       date: Date
 

@@ -9,7 +9,7 @@ import { ContactsModule } from './contacts/contacts.module'
 import { ChatsRoomModule } from './chats-room/chats-room.module'
 import { MessagesModule } from './messages/messages.module'
 import { MessagesWsModule } from './socket/messages-ws/messages-ws.module'
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module'
 
 @Module({
   imports: [

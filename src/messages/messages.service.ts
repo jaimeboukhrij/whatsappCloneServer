@@ -37,7 +37,8 @@ export class MessagesService {
         owner: userCreate,
         chatRoom: chatRoomCreate,
         chatRoomId,
-        isRead: false
+        isRead: false,
+        isDelivered: createMessageDto.isDelivered
       })
 
       return message

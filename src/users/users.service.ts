@@ -138,12 +138,13 @@ export class UsersService {
   async getUserChatsRoom (userId: string):Promise<ChatRoomI[]> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: { chatsRoom: { messages: { owner: true }, users: true } }
+      relations: { chatsRoom: { messages: { owner: true }, users: { contacts: true } } }
     })
 
     if (!user) throw new Error('User not found')
     const chatsRoom = await Promise.all(user.chatsRoom.map(async (chatRoom) => {
       const contactUser = chatRoom.users?.find((user) => user.id !== userId)
+
       const messagesSorted = chatRoom.messages
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .map((message) => {
@@ -155,25 +156,48 @@ export class UsersService {
               : ('received' as 'sent' | 'received')
           }
         })
+      const messagesDelivered = messagesSorted.filter(
+        message => !(message.type === 'received' && !message.isDelivered)
+      ).map(message => {
+        if (!message.isDelivered) return ({ ...message, isRead: true })
+        return message
+      })
 
-      const lastTwentyMessages = messagesSorted.slice(-20)
-      const lastMessage = messagesSorted.at(-1)
+      const lastTwentyMessages = messagesDelivered.slice(-20)
+      const lastMessage = messagesDelivered.at(-1)
+      const chatRoomPinned = user.chatsRoomPinned.find(chatsRoomPinned => chatsRoomPinned.chatRoomId === chatRoom.id)
+      const chatsRoomNotificationsSilenced = user.chatsRoomNotificationsSilenced.find(chatsRoomSilenced => chatsRoomSilenced.chatRoomId === chatRoom.id)
+
       if (chatRoom.type === 'private') {
+        const isBlockedByContact = contactUser.chatsRoomBlocked.some(chatRoomBlocked => chatRoomBlocked.chatRoomId === chatRoom.id)
+        const isBlockedByUser = user.chatsRoomBlocked.some(chatRoomBlocked => chatRoomBlocked.chatRoomId === chatRoom.id)
+
         return {
           ...chatRoom,
-          messages: messagesSorted,
+          messages: messagesDelivered,
           name: `${contactUser.firstName} ${contactUser.lastName}`,
           urlImg: contactUser.urlImg,
           contactUserId: contactUser.id,
           lastSeen: this.utilsService.formatLastSeen(new Date(contactUser.lastSeen)),
-          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id)
+          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id),
+          inFavorites: user.chatsRoomFavorites.some(chatsRoomFavorites => chatsRoomFavorites.chatRoomId === chatRoom.id),
+          isArchived: user.chatsRoomArchived.some(chatsRoomArchived => chatsRoomArchived.chatRoomId === chatRoom.id),
+          isPinned: chatRoomPinned ? chatRoomPinned.value : null,
+          notificationsSilenced: chatsRoomNotificationsSilenced ? chatsRoomNotificationsSilenced.value : null,
+          isBlocked: isBlockedByContact || isBlockedByUser
+
         }
       } else {
         return {
           ...chatRoom,
-          messages: messagesSorted,
+          messages: messagesDelivered,
           contactUserId: contactUser.id,
-          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id)
+          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id),
+          inFavorites: user.chatsRoomFavorites.some(chatsRoomFavorites => chatsRoomFavorites.chatRoomId === chatRoom.id),
+          isArchived: user.chatsRoomArchived.some(chatsRoomArchived => chatsRoomArchived.chatRoomId === chatRoom.id),
+          isPinned: chatRoomPinned ? chatRoomPinned.value : null,
+          notificationsSilenced: chatsRoomNotificationsSilenced ? chatsRoomNotificationsSilenced.value : null
+
         }
       }
     })
