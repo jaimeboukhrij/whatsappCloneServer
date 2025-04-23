@@ -60,14 +60,17 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   @SubscribeMessage('writing-from-client')
-  async onWritingFromClient (client: Socket, isWriting: boolean) {
-    if (isWriting) {
+  async onWritingFromClient (
+    client: Socket,
+    data: { isWriting: boolean; chatRoomId: string }
+  ) {
+    if (data.isWriting) {
       const token = client.handshake.headers.token as string
       let payload: JwtPayloadInterface
 
       try {
         payload = this.jwtService.verify(token)
-        await this.messagesWsService.registerWritingClient(client, payload.id)
+        await this.messagesWsService.registerWritingClient(client, payload.id, data.chatRoomId)
       } catch (error) {
         console.log('Error en la verificación del token:', error)
         client.disconnect()
@@ -75,10 +78,10 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
       }
     }
 
-    if (!isWriting) {
+    if (!data.isWriting) {
       this.messagesWsService.removeWritingClient(client.id)
     }
-    this.wss.emit('writing-from-server', this.messagesWsService.getWritingUsersIds())
+    this.wss.emit('writing-from-server', this.messagesWsService.getWritingUsersData())
   }
 
   private async changeLastSeen (client: Socket, connect: boolean) {
@@ -114,11 +117,18 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
     for (const chatRoom of chatsRoom) {
       const { users } = chatRoom
       const contactUser = users.find(user => user.id !== userId)
-      const contactSocketId = this.messagesWsService.getSocketIdByUserId(contactUser.id)
+      const contactSocketId = this.messagesWsService.getSocketIdByUserId(contactUser?.id)
       if (!contactSocketId) continue
       this.wss.to(contactSocketId).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
     }
 
     this.wss.to(client.id).emit('users-online-updated', this.messagesWsService.getConnectedUsersIds())
+  }
+
+  createNewGroupSocket (groupMembersIds:string[]) {
+    for (const memberId of groupMembersIds) {
+      const contactSocketMemberId = this.messagesWsService.getSocketIdByUserId(memberId)
+      this.wss.to(contactSocketMemberId).emit('new-group-from-server')
+    }
   }
 }

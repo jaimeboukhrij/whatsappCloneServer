@@ -191,8 +191,8 @@ export class UsersService {
         return {
           ...chatRoom,
           messages: messagesDelivered,
-          contactUserId: contactUser.id,
-          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id),
+          contactUserId: contactUser?.id,
+          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false)) || lastMessage?.owner.id === user.id,
           inFavorites: user.chatsRoomFavorites.some(chatsRoomFavorites => chatsRoomFavorites.chatRoomId === chatRoom.id),
           isArchived: user.chatsRoomArchived.some(chatsRoomArchived => chatsRoomArchived.chatRoomId === chatRoom.id),
           isPinned: chatRoomPinned ? chatRoomPinned.value : null,

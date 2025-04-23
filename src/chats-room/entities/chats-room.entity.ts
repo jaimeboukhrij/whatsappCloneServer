@@ -34,12 +34,13 @@ export class ChatsRoom {
 
   @ManyToMany(() => User, (user) => user.chatsRoom)
   @JoinTable({
-    name: 'chats-room_users',
+    name: 'chats_room_users',
     joinColumn: {
-      name: 'chats-room',
+      name: 'chat_room_id',
       referencedColumnName: 'id'
     },
     inverseJoinColumn: {
+      name: 'user_id',
       referencedColumnName: 'id'
     }
   })

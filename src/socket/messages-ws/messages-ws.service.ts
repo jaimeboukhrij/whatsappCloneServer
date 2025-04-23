@@ -15,7 +15,8 @@ interface ConnectedClients {
   interface WritingClients {
     [id: string]: {
         socket: Socket,
-        user: User
+        user: User,
+        chatRoomId:string
     }
   }
 @Injectable()
@@ -45,7 +46,7 @@ export class MessagesWsService {
     }
   }
 
-  async registerWritingClient (client: Socket, userId: string) {
+  async registerWritingClient (client: Socket, userId: string, chatRoomId:string) {
     const user = await this.userRepository.findOneBy({ id: userId })
     if (!user) throw new Error('User not found')
 
@@ -57,7 +58,8 @@ export class MessagesWsService {
 
     this.writingClients[client.id] = {
       socket: client,
-      user
+      user,
+      chatRoomId
     }
   }
 
@@ -99,8 +101,12 @@ export class MessagesWsService {
     return Object.keys(this.connectedClients).map(socketId => this.getUserId(socketId))
   }
 
-  getWritingUsersIds (): string[] {
-    return Object.keys(this.writingClients).map(socketId => this.getUserId(socketId))
+  getWritingUsersData (): { userID: string; chatRoomId: string }[] {
+    return Object.keys(this.writingClients).map(socketId => {
+      const userID = this.getUserId(socketId)
+      const chatRoomId = this.writingClients[socketId].chatRoomId
+      return { userID, chatRoomId }
+    })
   }
 
   getUserFullName (socketId: string) {

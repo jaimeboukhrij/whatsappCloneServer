@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common'
 import { CreateMessageDto } from './dto/create-message.dto'
 import { UpdateMessageDto } from './dto/update-message.dto'
 import { isUUID } from 'class-validator'
@@ -10,8 +10,10 @@ import { Repository } from 'typeorm'
 
 @Injectable()
 export class MessagesService {
-  constructor (private readonly usersService:UsersService,
-    private readonly chatsRoomService:ChatsRoomService,
+  constructor (
+    private readonly usersService:UsersService,
+    @Inject(forwardRef(() => ChatsRoomService))
+    private readonly chatsRoomService: ChatsRoomService,
     @InjectRepository(Messages) private readonly messagesReposiroty:Repository<Messages>
   ) {
 
