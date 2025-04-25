@@ -19,6 +19,12 @@ export class MessagesController {
     return this.messagesService.updateMany(messages)
   }
 
+  @Put('delete-many')
+  deleteMany (@Body() messagesIds: string[]) {
+    console.log('controladorr', messagesIds)
+    return this.messagesService.deleteMany(messagesIds)
+  }
+
   @Patch(':id')
   update (@Param('id') id: string, @Body() updateMessageDto: UpdateMessageDto) {
     return this.messagesService.update(+id, updateMessageDto)

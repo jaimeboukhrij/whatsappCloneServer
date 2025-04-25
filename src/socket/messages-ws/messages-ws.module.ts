@@ -6,11 +6,13 @@ import { AuthModule } from 'src/auth/auth.module'
 import { SharedModule } from 'src/shared/shared.module'
 import { UsersModule } from 'src/users/users.module'
 import { MessagesModule } from 'src/messages/messages.module'
+import { ChatsRoomModule } from 'src/chats-room/chats-room.module'
 
 @Module({
   providers: [MessagesWsGateway, MessagesWsService],
   exports: [MessagesWsGateway],
   imports: [AuthModule, SharedModule, UsersModule,
+    forwardRef(() => ChatsRoomModule),
     forwardRef(() => MessagesModule)]
 })
 export class MessagesWsModule {}

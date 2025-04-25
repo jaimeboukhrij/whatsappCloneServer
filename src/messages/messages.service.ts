@@ -14,7 +14,7 @@ export class MessagesService {
     private readonly usersService:UsersService,
     @Inject(forwardRef(() => ChatsRoomService))
     private readonly chatsRoomService: ChatsRoomService,
-    @InjectRepository(Messages) private readonly messagesReposiroty:Repository<Messages>
+    @InjectRepository(Messages) private readonly messagesRepository:Repository<Messages>
   ) {
 
   }
@@ -33,7 +33,7 @@ export class MessagesService {
     const chatRoomCreate = this.chatsRoomService.createChatRoomByRepository(chatRoom)
 
     try {
-      const message = await this.messagesReposiroty.save({
+      const message = await this.messagesRepository.save({
         text,
         date: new Date(),
         owner: userCreate,
@@ -51,14 +51,28 @@ export class MessagesService {
 
   async updateMany (messages: UpdateMessageDto[]) {
     const updates = messages.map(async (message) => {
-      const existing = await this.messagesReposiroty.findOne({ where: { id: message.id } })
+      const existing = await this.messagesRepository.findOne({ where: { id: message.id } })
       if (!existing) throw new BadRequestException(`Message with id ${message.id} not found`)
 
-      const updated = this.messagesReposiroty.merge(existing, message)
-      return this.messagesReposiroty.save(updated)
+      const updated = this.messagesRepository.merge(existing, message)
+      return this.messagesRepository.save(updated)
     })
 
     return Promise.all(updates)
+  }
+
+  async deleteMany (messagesIds: string[]): Promise<void> {
+    const messages = await Promise.all(
+      messagesIds.map(async (id) => {
+        const message = await this.messagesRepository.findOne({ where: { id } })
+        if (!message) {
+          throw new BadRequestException(`Message with id ${id} not found`)
+        }
+        return message
+      })
+    )
+
+    await this.messagesRepository.remove(messages)
   }
 
   update (id: number, updateMessageDto: UpdateMessageDto) {

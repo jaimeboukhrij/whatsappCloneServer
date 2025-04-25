@@ -1,3 +1,4 @@
+import { ChatsRoomService } from 'src/chats-room/chats-room.service'
 import { MessagesService } from './../../messages/messages.service'
 import { JwtService } from '@nestjs/jwt'
 import { OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets'
@@ -6,6 +7,7 @@ import { MessagesWsService } from './messages-ws.service'
 import { JwtPayloadInterface } from 'src/auth/interfaces'
 import { UsersService } from 'src/users/users.service'
 import { CreateMessageDto } from 'src/messages/dto/create-message.dto'
+import { forwardRef, Inject } from '@nestjs/common'
 
 @WebSocketGateway({
   cors: {
@@ -19,7 +21,9 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
     private readonly messagesWsService: MessagesWsService,
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
-    private readonly messagesService: MessagesService
+    private readonly messagesService: MessagesService,
+     @Inject(forwardRef(() => ChatsRoomService))
+    private readonly chatsRoomService:ChatsRoomService
   ) {}
 
   async handleConnection (client: Socket) {
@@ -72,7 +76,7 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
         payload = this.jwtService.verify(token)
         await this.messagesWsService.registerWritingClient(client, payload.id, data.chatRoomId)
       } catch (error) {
-        console.log('Error en la verificación del token:', error)
+        client.emit('token-error', { message: error })
         client.disconnect()
         return
       }
@@ -82,6 +86,19 @@ export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconne
       this.messagesWsService.removeWritingClient(client.id)
     }
     this.wss.emit('writing-from-server', this.messagesWsService.getWritingUsersData())
+  }
+
+  @SubscribeMessage('on-delete-message-client')
+  async onDeleteMessageFromClient (
+    client: Socket,
+    chatRoomId: string
+  ) {
+    console.log('en el servisdor', chatRoomId)
+    const currentChatRoom = await this.chatsRoomService.findOne(chatRoomId)
+    currentChatRoom.users.forEach(user => {
+      const userSocketId = this.messagesWsService.getSocketIdByUserId(user.id)
+      this.wss.to(userSocketId).emit('on-delete-message-server')
+    })
   }
 
   private async changeLastSeen (client: Socket, connect: boolean) {

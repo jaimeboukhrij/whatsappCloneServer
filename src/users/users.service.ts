@@ -156,7 +156,9 @@ export class UsersService {
               : ('received' as 'sent' | 'received')
           }
         })
-      const messagesDelivered = messagesSorted.filter(
+      const messagesToShow = messagesSorted.filter(m => !m.hideFor?.includes(userId))
+
+      const messagesDelivered = messagesToShow.filter(
         message => !(message.type === 'received' && !message.isDelivered)
       ).map(message => {
         if (!message.isDelivered) return ({ ...message, isRead: true })
@@ -179,7 +181,7 @@ export class UsersService {
           urlImg: contactUser.urlImg,
           contactUserId: contactUser.id,
           lastSeen: this.utilsService.formatLastSeen(new Date(contactUser.lastSeen)),
-          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id),
+          isRead: (!(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id) || !messagesDelivered.length),
           inFavorites: user.chatsRoomFavorites.some(chatsRoomFavorites => chatsRoomFavorites.chatRoomId === chatRoom.id),
           isArchived: user.chatsRoomArchived.some(chatsRoomArchived => chatsRoomArchived.chatRoomId === chatRoom.id),
           isPinned: chatRoomPinned ? chatRoomPinned.value : null,

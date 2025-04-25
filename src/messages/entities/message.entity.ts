@@ -16,6 +16,9 @@ export class Messages {
     @Column('bool', { default: false })
       isDelivered: boolean
 
+      @Column('uuid', { array: true, default: () => 'ARRAY[]::uuid[]' })
+        hideFor: string[]
+
     @CreateDateColumn({ type: 'timestamp' })
       date: Date
 
