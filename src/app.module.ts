@@ -28,7 +28,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module'
         }
       },
       autoLoadEntities: true,
-      synchronize: false
+      synchronize: true
     }),
     AuthModule,
     SeedModule,
