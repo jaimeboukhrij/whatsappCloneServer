@@ -28,6 +28,9 @@ export class User {
     urlImg: string | null
 
   @Column('text', { nullable: true })
+    status: string | null
+
+  @Column('text', { nullable: true })
     lastSeen?: string
 
   @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
@@ -58,6 +61,14 @@ export class User {
     }
   })
     contacts: User[] | null
+
+    @ManyToMany(() => Messages, (message) => message.starredBy, { nullable: true, onDelete: 'CASCADE' })
+    @JoinTable({
+      name: 'user_starredMessages',
+      joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+      inverseJoinColumn: { name: 'message_id', referencedColumnName: 'id' }
+    })
+      starredMessages: Messages[] | null
 
   @ManyToMany(() => ChatsRoom, (chatsRoom) => chatsRoom.users)
     chatsRoom: ChatsRoom[]

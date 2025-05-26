@@ -41,7 +41,7 @@ export class UpdateChatsRoomDto extends PartialType(CreateChatsRoomDto) {
 
     @IsString({ each: true })
     @IsOptional()
-      users?: string[]
+      usersId?: string[]
 
     @IsString()
       type: 'private' | 'group'

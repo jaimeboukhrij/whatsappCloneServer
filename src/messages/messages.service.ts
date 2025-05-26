@@ -49,12 +49,23 @@ export class MessagesService {
     }
   }
 
-  async updateMany (messages: UpdateMessageDto[]) {
-    const updates = messages.map(async (message) => {
-      const existing = await this.messagesRepository.findOne({ where: { id: message.id } })
-      if (!existing) throw new BadRequestException(`Message with id ${message.id} not found`)
+  async updateMany (updateMessagesDto: UpdateMessageDto[]) {
+    const updates = updateMessagesDto.map(async (updateMessageDto) => {
+      const existing = await this.messagesRepository.findOne(
+        { where: { id: updateMessageDto.id }, relations: { starredBy: true } }
+      )
+      if (!existing) throw new BadRequestException(`Message with id ${updateMessageDto.id} not found`)
 
-      const updated = this.messagesRepository.merge(existing, message)
+      if (updateMessageDto.starredByUserId) {
+        if (existing.starredBy?.some(starredByUser => starredByUser.id === updateMessageDto.starredByUserId)) {
+          existing.starredBy = existing.starredBy.filter(starredByUser => starredByUser.id !== updateMessageDto.starredByUserId)
+        } else {
+          const user = await this.usersService.findOne(updateMessageDto.starredByUserId)
+          existing.starredBy = existing.starredBy?.length ? [...existing.starredBy, user] : [user]
+        }
+      }
+
+      const updated = this.messagesRepository.merge(existing, updateMessageDto)
       return this.messagesRepository.save(updated)
     })
 

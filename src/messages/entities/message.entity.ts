@@ -1,6 +1,6 @@
 import { ChatsRoom } from 'src/chats-room/entities/chats-room.entity'
 import { User } from 'src/shared/entities'
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm'
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, ManyToMany } from 'typeorm'
 
 @Entity('messages')
 export class Messages {
@@ -30,4 +30,7 @@ export class Messages {
 
     @ManyToOne(() => ChatsRoom, (chatRoom) => chatRoom.messages, { onDelete: 'CASCADE' })
       chatRoom: ChatsRoom
+
+    @ManyToMany(() => User, (user) => user.starredMessages)
+      starredBy: User[]
 }

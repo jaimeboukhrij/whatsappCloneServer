@@ -13,4 +13,8 @@ export class UpdateMessageDto extends PartialType(CreateMessageDto) {
   @IsOptional()
   @IsString()
     hideFor?: string[]
+
+  @IsOptional()
+  @IsString()
+    starredByUserId?: string
 }

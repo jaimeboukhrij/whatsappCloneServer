@@ -29,7 +29,15 @@ export class ContactsService {
   async findAll (userId:string) {
     const userDB = await this.usersService.findOnePlane(userId)
 
-    return userDB.contacts
+    const contacts = userDB.contacts.map(contact => ({
+      id: contact.id,
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      urlImg: contact.urlImg,
+      status: contact.status
+    }))
+
+    return contacts
   }
 
   async removeContact (userId:string, createContactDto: CreateContactDto) {

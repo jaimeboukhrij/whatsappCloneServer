@@ -4,6 +4,7 @@ import { UpdateUserDto } from 'src/shared/dto'
 import { Auth, GetUser } from 'src/auth/decorators'
 import { User } from 'src/shared/entities'
 import { ChatRoomI } from 'src/chats-room/interfaces'
+import { StarredMessageI } from 'src/messages/interfaces/starred-messages.interface'
 
 @Controller('users')
 @Auth()
@@ -27,6 +28,13 @@ export class UsersController {
     @GetUser('id') userId:string
   ):Promise<ChatRoomI[]> {
     return this.usersService.getUserChatsRoom(userId)
+  }
+
+  @Get('starred-messages')
+  async getUserStarredMessages (
+    @GetUser('id') userId:string
+  ):Promise<StarredMessageI[]> {
+    return this.usersService.getUserStarredMessages(userId)
   }
 
   @Get('search-by-username')

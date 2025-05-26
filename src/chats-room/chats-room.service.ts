@@ -3,7 +3,6 @@ import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/com
 import { InjectRepository } from '@nestjs/typeorm'
 import { ChatsRoom } from './entities/chats-room.entity'
 import { Repository } from 'typeorm'
-import { isUUID } from 'class-validator'
 import { UpdateChatsRoomDto } from './dto/update-chats-room.dto'
 import { CreateChatsRoomDto } from './dto/create-chats-room.dto'
 import { ChatRoomI } from './interfaces'
@@ -18,7 +17,8 @@ export class ChatsRoomService {
     @InjectRepository(ChatsRoom) private readonly chatRoomRepository:Repository<ChatsRoom>,
     private readonly utilsService:UtilService,
     @Inject(forwardRef(() => MessagesWsGateway))
-    private readonly messagesWsGateway: MessagesWsGateway
+    private readonly messagesWsGateway: MessagesWsGateway,
+    @InjectRepository(User) private readonly userRepository:Repository<User>
 
   ) {}
 
@@ -89,15 +89,15 @@ export class ChatsRoomService {
   }
 
   private async updateChatRoomPrivate (updateChatsRoomDto: UpdateChatsRoomDto, chatRoomId: string) {
-    const { users, ...toUpdate } = updateChatsRoomDto
+    const { usersId, ...toUpdate } = updateChatsRoomDto
     let usersDb:User[] = []
-    if (users?.length === 0) {
+    if (usersId?.length === 0) {
       await this.delete(chatRoomId)
       return
     }
 
-    if (users?.length) {
-      usersDb = await this.usersService.findSome(users)
+    if (usersId?.length) {
+      usersDb = await this.usersService.findSome(usersId)
     }
 
     const dataToUpdate = {
@@ -128,27 +128,91 @@ export class ChatsRoomService {
     return this.existingChatRoom(curentUserId, contactId)
   }
 
-  async findOne (chatRoomId: string, currentUserId?:string):Promise<ChatRoomI> {
-    if (!isUUID(chatRoomId)) throw new BadRequestException('I need a valid  id')
-    const chatRoom = await this.chatRoomRepository
-      .findOne({
-        where: { id: chatRoomId },
-        relations: { messages: { owner: true }, users: true }
-      })
-    if (!chatRoom) throw new BadRequestException(`ChatRoom with id ${chatRoomId} not found`)
-    const contactUserId = chatRoom.users.find(user => user.id !== currentUserId)?.id
-    console.log(contactUserId)
-
-    if ((!currentUserId && chatRoom.type === 'group') || contactUserId) return chatRoom
-
-    const contactUser = await this.usersService.findOnePlane(contactUserId)
-    return ({
-      ...chatRoom,
-      name: `${contactUser.firstName} ${contactUser.lastName}`,
-      urlImg: contactUser.urlImg,
-      contactUserId: contactUser.id,
-      lastSeen: contactUser.lastSeen
+  async findOne (chatRoomId: string, userId?:string):Promise<ChatRoomI> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: { chatsRoom: { messages: { owner: true }, users: { contacts: true } } }
     })
+
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+      relations: { messages: { owner: true, starredBy: true }, users: { contacts: true } }
+
+    })
+
+    if (!user) throw new Error('User not found')
+    const updateChatRoom = await Promise.all([chatRoom].map(async (chatRoom) => {
+      const contactUser = chatRoom.users?.find((user) => user.id !== userId)
+
+      const messagesSorted = chatRoom.messages
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((message) => {
+          const date = new Date(message.date)
+          const hours = String(date.getHours()).padStart(2, '0')
+          const minutes = String(date.getMinutes()).padStart(2, '0')
+          const messageHour = `${hours}:${minutes}`
+          const messageDate = this.utilsService.formatLastSeen(new Date(message.date))
+          return {
+            ...message,
+            messageHour,
+            messageDate,
+            type:
+            userId === message?.owner?.id
+              ? ('sent' as 'sent' | 'received')
+              : ('received' as 'sent' | 'received')
+          }
+        })
+      const messagesToShow = messagesSorted.filter(m => !m.hideFor?.includes(userId))
+
+      const messagesDelivered = messagesToShow.filter(
+        message => !(message.type === 'received' && !message.isDelivered)
+      ).map(message => {
+        if (!message.isDelivered) return ({ ...message, isRead: true })
+        return message
+      })
+
+      const lastTwentyMessages = messagesDelivered.slice(-20)
+      const lastMessage = messagesDelivered.at(-1)
+      const chatRoomPinned = user.chatsRoomPinned.find(chatsRoomPinned => chatsRoomPinned.chatRoomId === chatRoom.id)
+      const chatsRoomNotificationsSilenced = user.chatsRoomNotificationsSilenced.find(chatsRoomSilenced => chatsRoomSilenced.chatRoomId === chatRoom.id)
+
+      if (chatRoom.type === 'private') {
+        const isBlockedByContact = contactUser.chatsRoomBlocked.some(chatRoomBlocked => chatRoomBlocked.chatRoomId === chatRoom.id)
+        const isBlockedByUser = user.chatsRoomBlocked.some(chatRoomBlocked => chatRoomBlocked.chatRoomId === chatRoom.id)
+
+        console.log('privateee')
+
+        return {
+          ...chatRoom,
+          messages: messagesDelivered,
+          name: `${contactUser.firstName} ${contactUser.lastName}`,
+          urlImg: contactUser.urlImg,
+          contactUserId: contactUser.id,
+          lastSeen: this.utilsService.formatLastSeen(new Date(contactUser.lastSeen)),
+          isRead: (!(((lastTwentyMessages.some(message => !message.isRead)) ?? false) && lastMessage?.owner.id === contactUser.id) || !messagesDelivered.length),
+          inFavorites: user.chatsRoomFavorites.some(chatsRoomFavorites => chatsRoomFavorites.chatRoomId === chatRoom.id),
+          isArchived: user.chatsRoomArchived.some(chatsRoomArchived => chatsRoomArchived.chatRoomId === chatRoom.id),
+          isPinned: chatRoomPinned ? chatRoomPinned.value : null,
+          notificationsSilenced: chatsRoomNotificationsSilenced ? chatsRoomNotificationsSilenced.value : null,
+          isBlocked: isBlockedByContact || isBlockedByUser
+
+        }
+      } else {
+        return {
+          ...chatRoom,
+          messages: messagesDelivered,
+          contactUserId: contactUser?.id,
+          isRead: !(((lastTwentyMessages.some(message => !message.isRead)) ?? false)) || lastMessage?.owner.id === user.id,
+          inFavorites: user.chatsRoomFavorites.some(chatsRoomFavorites => chatsRoomFavorites.chatRoomId === chatRoom.id),
+          isArchived: user.chatsRoomArchived.some(chatsRoomArchived => chatsRoomArchived.chatRoomId === chatRoom.id),
+          isPinned: chatRoomPinned ? chatRoomPinned.value : null,
+          notificationsSilenced: chatsRoomNotificationsSilenced ? chatsRoomNotificationsSilenced.value : null
+
+        }
+      }
+    }))
+
+    return updateChatRoom[0]
   }
 
   createChatRoomByRepository (chatRoom:ChatsRoom) {
