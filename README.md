@@ -13,9 +13,13 @@
 2. ```yarn install```
 3. Clonar el archivo ```.env.template``` y renombrarlo a ```.env```
 4. Cambiar las variables de entorno
-5. Levantar la base de datos
-```
-docker-compose up -d
-```
-
-6. Levantar: ```yarn start:dev```
+5. Descargar Docker Desktop
+6. Levantar la base de datos
+    ```
+    docker-compose up -d
+    ```
+7. Realizar seed de usuarios:
+    ```
+    npm run seed
+    ```
+8. Levantar proyecto: ```npm start:dev```

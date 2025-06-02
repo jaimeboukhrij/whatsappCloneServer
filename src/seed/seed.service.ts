@@ -44,12 +44,8 @@ export class SeedService {
     const usersDb = await Promise.all(usersWithImg.map(user => this.authService.register(user)))
     const usersIdDb = usersDb.filter(user => user.userName !== 'adrian_martinez').map(user => user.id).slice(0, 4)
 
-    usersDb.forEach(async userDb => {
-      const { id } = userDb
+    const adrianUser = usersDb.find(user => user.userName === 'adrian_martinez')
 
-      if (userDb.userName === 'adrian_martinez') {
-        await Promise.all(usersIdDb.map(idDb => this.contactsService.create(id, { id: idDb })))
-      }
-    })
+    await Promise.all(usersIdDb.map(idDb => this.contactsService.create(adrianUser.id, { id: idDb })))
   }
 }
