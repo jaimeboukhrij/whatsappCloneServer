@@ -2,11 +2,12 @@ import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/com
 import { CreateMessageDto } from './dto/create-message.dto'
 import { UpdateMessageDto } from './dto/update-message.dto'
 import { isUUID } from 'class-validator'
-import { UsersService } from 'src/users/users.service'
-import { ChatsRoomService } from 'src/chats-room/chats-room.service'
+import { UsersService } from '@/src/users/services/users.service'
+import { ChatsRoomService } from '@/src/chats-room/services/chats-room.service'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Messages } from './entities/message.entity'
 import { Repository } from 'typeorm'
+import { ChatsRoomFactoryService } from '../chats-room/services'
 
 @Injectable()
 export class MessagesService {
@@ -14,7 +15,8 @@ export class MessagesService {
     private readonly usersService:UsersService,
     @Inject(forwardRef(() => ChatsRoomService))
     private readonly chatsRoomService: ChatsRoomService,
-    @InjectRepository(Messages) private readonly messagesRepository:Repository<Messages>
+    @InjectRepository(Messages) private readonly messagesRepository:Repository<Messages>,
+    private readonly chatsRoomFactoryService:ChatsRoomFactoryService
   ) {
 
   }
@@ -30,7 +32,7 @@ export class MessagesService {
 
     if (!isUUID(ownerId)) throw new BadRequestException(`${chatRoomId} is not a valid id`)
     const chatRoom = await this.chatsRoomService.findOne(chatRoomId)
-    const chatRoomCreate = this.chatsRoomService.createChatRoomByRepository(chatRoom)
+    const chatRoomCreate = this.chatsRoomFactoryService.createChatRoomByRepository(chatRoom)
 
     try {
       const message = await this.messagesRepository.save({

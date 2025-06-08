@@ -8,8 +8,8 @@ import { SharedModule } from './shared/shared.module'
 import { ContactsModule } from './contacts/contacts.module'
 import { ChatsRoomModule } from './chats-room/chats-room.module'
 import { MessagesModule } from './messages/messages.module'
-import { MessagesWsModule } from './socket/messages-ws/messages-ws.module'
 import { CloudinaryModule } from './cloudinary/cloudinary.module'
+import { WsModule } from './web-socket/web-socket.module'
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module'
     ContactsModule,
     ChatsRoomModule,
     MessagesModule,
-    MessagesWsModule,
+    WsModule,
     CloudinaryModule
   ],
   controllers: [],

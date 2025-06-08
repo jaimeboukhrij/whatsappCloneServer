@@ -1,4 +1,5 @@
 /* eslint-disable no-use-before-define */
+import { UserId } from '@/src/users/interfaces/user.interfaces'
 import { ChatsRoom } from 'src/chats-room/entities/chats-room.entity'
 import { NotificationsSilencedEnum } from 'src/chats-room/interfaces'
 import { Messages } from 'src/messages/entities/message.entity'
@@ -7,7 +8,7 @@ import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColum
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-    id: string
+    id: UserId
 
   @Column('text', { unique: true })
     email: string

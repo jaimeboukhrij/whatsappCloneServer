@@ -21,7 +21,6 @@ export class MessagesController {
 
   @Put('delete-many')
   deleteMany (@Body() messagesIds: string[]) {
-    console.log('controladorr', messagesIds)
     return this.messagesService.deleteMany(messagesIds)
   }
 

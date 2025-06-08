@@ -1,17 +1,24 @@
 import { Module } from '@nestjs/common'
-import { UsersService } from './users.service'
+import { UsersService } from './services/users.service'
 import { UsersController } from './users.controller'
 import { AuthModule } from 'src/auth/auth.module'
 import { SharedModule } from 'src/shared/shared.module'
+import { UserSearchService, UserStarredMessagesService } from './services'
 
 @Module({
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService,
+    UserSearchService,
+    UserStarredMessagesService],
   imports: [
     AuthModule,
     SharedModule
   ],
-  exports: [UsersService]
+  exports: [
+    UsersService,
+    UserSearchService,
+    UserStarredMessagesService
+  ]
 
 })
 export class UsersModule {}

@@ -1,4 +1,4 @@
-import { UsersService } from './../users/users.service'
+import { UsersService } from '../users/services/users.service'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { CreateContactDto } from './dto/create-contact.dto'
 import { Repository } from 'typeorm'

@@ -3,6 +3,7 @@ import { IsOptional, IsString, IsBoolean, IsEnum, IsDate } from 'class-validator
 import { NotificationsSilencedEnum } from '../interfaces'
 import { Transform } from 'class-transformer'
 import { CreateChatsRoomDto } from './create-chats-room.dto'
+import { UserId } from '@/src/users/interfaces/user.interfaces'
 
 export class UpdateChatsRoomDto extends PartialType(CreateChatsRoomDto) {
     @IsOptional()
@@ -41,7 +42,7 @@ export class UpdateChatsRoomDto extends PartialType(CreateChatsRoomDto) {
 
     @IsString({ each: true })
     @IsOptional()
-      usersId?: string[]
+      usersId?: UserId[]
 
     @IsString()
       type: 'private' | 'group'

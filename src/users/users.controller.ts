@@ -1,15 +1,22 @@
+import { UserStarredMessagesService } from './services/user-starred-messages.service'
 import { Controller, Get, Body, Patch, Param, ParseUUIDPipe, Query } from '@nestjs/common'
-import { UsersService } from './users.service'
+import { UsersService } from './services/users.service'
 import { UpdateUserDto } from 'src/shared/dto'
 import { Auth, GetUser } from 'src/auth/decorators'
 import { User } from 'src/shared/entities'
-import { ChatRoomI } from 'src/chats-room/interfaces'
 import { StarredMessageI } from 'src/messages/interfaces/starred-messages.interface'
+import { UserSearchService } from './services'
+import { UserId } from './interfaces/user.interfaces'
 
 @Controller('users')
 @Auth()
 export class UsersController {
-  constructor (private readonly usersService: UsersService) {}
+  constructor (
+    private readonly usersService: UsersService,
+    private readonly userSearchService:UserSearchService,
+    private readonly userStarredMessagesService:UserStarredMessagesService
+
+  ) {}
 
   @Get()
   findAll () {
@@ -18,31 +25,24 @@ export class UsersController {
 
   @Get('recommended')
   async getUsersRecommended (
-    @GetUser('id') currentUserId:string
+    @GetUser('id') currentUserId:UserId
   ): Promise<User[]> {
-    return this.usersService.getUsersRecommended(currentUserId)
-  }
-
-  @Get('chats-room')
-  async getUserChatsRoom (
-    @GetUser('id') userId:string
-  ):Promise<ChatRoomI[]> {
-    return this.usersService.getUserChatsRoom(userId)
+    return this.userSearchService.getUsersRecommended(currentUserId)
   }
 
   @Get('starred-messages')
   async getUserStarredMessages (
-    @GetUser('id') userId:string
+    @GetUser('id') userId:UserId
   ):Promise<StarredMessageI[]> {
-    return this.usersService.getUserStarredMessages(userId)
+    return this.userStarredMessagesService.getUserStarredMessages(userId)
   }
 
   @Get('search-by-username')
   async findUsersByUsernamePrefix (
     @Query('prefix') prefix: string,
-    @GetUser('id') currentUserId:string
+    @GetUser('id') currentUserId:UserId
   ): Promise<User[]> {
-    return this.usersService.findUsersByUsernamePrefix(prefix, currentUserId)
+    return this.userSearchService.findUsersByUsernamePrefix(prefix, currentUserId)
   }
 
   @Get(':term')

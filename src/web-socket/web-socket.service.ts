@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Socket } from 'socket.io'
 import { User } from 'src/shared/entities'
 import { Repository } from 'typeorm'
+import { UserId } from '../users/interfaces/user.interfaces'
 
 interface ConnectedClients {
     [id: string]: {
@@ -20,7 +21,7 @@ interface ConnectedClients {
     }
   }
 @Injectable()
-export class MessagesWsService {
+export class WsService {
   connectedClients: ConnectedClients = {}
   private writingClients: WritingClients = {}
 
@@ -29,7 +30,7 @@ export class MessagesWsService {
     private readonly userRepository: Repository<User>
   ) {}
 
-  async registerClient (client: Socket, userId: string) {
+  async registerClient (client: Socket, userId: UserId) {
     const user = await this.userRepository.findOneBy({ id: userId })
     if (!user) throw new Error('User not found')
 
@@ -46,7 +47,7 @@ export class MessagesWsService {
     }
   }
 
-  async registerWritingClient (client: Socket, userId: string, chatRoomId:string) {
+  async registerWritingClient (client: Socket, userId: UserId, chatRoomId:string) {
     const user = await this.userRepository.findOneBy({ id: userId })
     if (!user) throw new Error('User not found')
 
@@ -71,7 +72,7 @@ export class MessagesWsService {
     delete this.writingClients[clientId]
   }
 
-  removeClientByUserId (userId: string) {
+  removeClientByUserId (userId: UserId) {
     for (const [socketId, clientData] of Object.entries(this.connectedClients)) {
       if (clientData.user.id === userId) {
         this.removeClient(socketId)
@@ -80,7 +81,7 @@ export class MessagesWsService {
     }
   }
 
-  removeWritingClientByUserId (userId: string) {
+  removeWritingClientByUserId (userId: UserId) {
     for (const [socketId, clientData] of Object.entries(this.writingClients)) {
       if (clientData.user.id === userId) {
         this.removeWritingClient(socketId)
@@ -89,11 +90,11 @@ export class MessagesWsService {
     }
   }
 
-  isUserConnected (userId: string): boolean {
+  isUserConnected (userId: UserId): boolean {
     return Object.values(this.connectedClients).some(client => client.user.id === userId)
   }
 
-  isUserWriting (userId: string) {
+  isUserWriting (userId: UserId) {
     return Object.values(this.writingClients).some(client => client.user.id === userId)
   }
 
@@ -115,6 +116,7 @@ export class MessagesWsService {
 
   getSocketIdByUserId (userId: string): string | null {
     for (const [socketId, clientData] of Object.entries(this.connectedClients)) {
+      console.log('----', { userId, socketId, clientData })
       if (clientData.user.id === userId) {
         return socketId
       }
@@ -122,8 +124,8 @@ export class MessagesWsService {
     return null
   }
 
-  getUserId (socketId: string) {
-    return this.connectedClients[socketId]?.user.id || null
+  getUserId (socketId: string):UserId {
+    return this.connectedClients[socketId].user.id as UserId
   }
 
   private checkUserConnection (user: User) {

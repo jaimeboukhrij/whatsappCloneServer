@@ -1,8 +1,9 @@
+import { UserId } from '@/src/users/interfaces/user.interfaces'
 import { IsString, IsEnum, IsArray, IsOptional } from 'class-validator'
 
 export class CreateChatsRoomDto {
   @IsArray()
-    membersIds: string[]
+    membersIds: UserId[]
 
   @IsOptional()
   @IsString()
